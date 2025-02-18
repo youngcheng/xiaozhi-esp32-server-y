@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 import os
-import logging
-logger = logging.getLogger(__name__)
+from config.logger import setup_logging
+TAG = __name__
+logger = setup_logging()
 
 
 class EMBD(ABC):
@@ -13,6 +14,8 @@ class SentenceEMBD(EMBD):
     def __init__(self, config: dict,):
         from sentence_transformers import SentenceTransformer,export_optimized_onnx_model
         self.model_dir = config.get("model_dir")
+        self.model_dir = os.path.join(self.model_dir,"onnx")
+        logger.bind(tag=TAG).info(f"优化模型成功: {self.model_dir}")
         self.device = config.get("device","cpu")
         # model_dir = "jinaai/jina-embeddings-v2-base-zh"
         if not os.path.exists(os.path.join(self.model_dir,"onnx","model_O3.onnx")):
@@ -23,7 +26,7 @@ class SentenceEMBD(EMBD):
                   model_kwargs={"file_name": "model.onnx"}
             )
             export_optimized_onnx_model(self.model, "O3", self.model_dir)
-            logging.info(f"优化模型成功: {self.model_dir}")
+            logger.bind(tag=TAG).info(f"优化模型成功: {self.model_dir}")
 
         self.model = SentenceTransformer(
             self.model_dir,
@@ -31,7 +34,7 @@ class SentenceEMBD(EMBD):
             model_kwargs={"file_name": "onnx/model_O3.onnx"},
             device=self.device,
         )
-        logging.info(f"加载模型成功: {self.model_dir}")
+        logger.bind(tag=TAG).info(f"加载模型成功: {self.model_dir}")
         
     def encode(self, data):
         return self.model.encode(data)

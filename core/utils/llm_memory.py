@@ -10,9 +10,9 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
+from config.logger import setup_logging
+TAG = __name__
+logger = setup_logging()
 # Cosine similarity function
 cos_sim = lambda a, b: (a @ b.T) / (norm(a) * norm(b))
 
