@@ -2459,17 +2459,6 @@ quanto = ["optimum-quanto (>=0.2.4)"]
 tests = ["Pillow", "accelerate", "einops", "parameterized", "pytest (<=8.0.0)", "pytest-xdist", "requests", "rjieba", "sacremoses", "scikit-learn", "sentencepiece", "timm", "torchaudio", "torchvision"]
 
 [[package]]
-name = "opuslib"
-version = "3.0.1"
-description = "Python bindings to the libopus, IETF low-delay audio codec"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "opuslib-3.0.1.tar.gz", hash = "sha256:2cb045e5b03e7fc50dfefe431e3404dddddbd8f5961c10c51e32dfb69a044c97"},
-]
-
-[[package]]
 name = "opuslib-next"
 version = "1.1.2"
 description = "Python bindings to the libopus, IETF low-delay audio codec"
@@ -4677,4 +4666,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10.16"
-content-hash = "45feceff6ce467d4bf868ae6ba2c56a463c5eaca8fd31eae5213fc888382ff86"
+content-hash = "8fb594d34e760a71c5fab55657d59fc45caade71b83a88b20ffa832b96b9aa5a"

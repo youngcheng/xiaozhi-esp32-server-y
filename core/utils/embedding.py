@@ -14,16 +14,14 @@ class SentenceEMBD(EMBD):
     def __init__(self, config: dict,):
         from sentence_transformers import SentenceTransformer,export_optimized_onnx_model
         self.model_dir = config.get("model_dir")
-        self.model_dir = os.path.join(self.model_dir,"onnx")
-        logger.bind(tag=TAG).info(f"优化模型成功: {self.model_dir}")
         self.device = config.get("device","cpu")
         # model_dir = "jinaai/jina-embeddings-v2-base-zh"
         if not os.path.exists(os.path.join(self.model_dir,"onnx","model_O3.onnx")):
             self.model = SentenceTransformer(
                 self.model_dir,
-                  backend="onnx", 
-                  device=self.device,
-                  model_kwargs={"file_name": "model.onnx"}
+                backend="onnx", 
+                device=self.device,
+                model_kwargs={"file_name": "model.onnx"}
             )
             export_optimized_onnx_model(self.model, "O3", self.model_dir)
             logger.bind(tag=TAG).info(f"优化模型成功: {self.model_dir}")
