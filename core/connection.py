@@ -127,9 +127,7 @@ class ConnectionHandler:
                     if all([llm, tts]):
                         self.llm = llm
                         self.tts = tts
-                        self.embd = embd
                         self.logger.bind(tag=TAG).info(f"Loaded private config and instances for device {device_id}")
-
                     else:
                         self.logger.bind(tag=TAG).error(f"Failed to create instances for device {device_id}")
                         self.private_config = None

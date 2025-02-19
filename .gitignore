@@ -146,3 +146,4 @@ tmp
 .env.development
 docker-compose.yml
 models/jina-embeddings-v2-base-zh/onnx/model.onnx
+/memory_data
