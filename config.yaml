@@ -42,7 +42,7 @@ xiaozhi:
 # 长期记忆参数
 memory:
     # 记忆摘要提示
-    summary_prompt: "你还保留着一些长期的记忆，这有助于让你的对话更加丰富和连贯："
+    summary_prompt:  "总结{content_len}字以内的对话摘要，将对话中的关键信息作为记忆存储下来，使你更了解你的对话对象。 对话内容如下{content}"
     # 记忆最大长度
     max_memory_length: 10000
     # 摘要最大长度

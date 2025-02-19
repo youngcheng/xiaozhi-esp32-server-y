@@ -109,7 +109,7 @@ class MemoryManager:
             summary_length: int = 1000,
             max_summary_length: int = 2000,
             memory_dir='memory_data',
-            use_intent_recognition: bool = True  # 添加意图识别开关
+            use_intent_recognition: bool = False  # 添加意图识别开关
         ):
         start_time = time.time()
         self.logger = setup_logging()
@@ -216,17 +216,23 @@ class MemoryManager:
         :param chat_content: 聊天内容
         :return: 总结的字符串
         """
+        #self.logger.bind(tag=TAG).info(f"生成记忆摘要: {chat_paragraph}")
         if self.llm is None:
             return "".join([msg['content'] for msg in chat_paragraph])[:self.summary_length]
         
         response_message = []
         try:            
+            content = self.summary_prompt.format(content=json.dumps(chat_paragraph, ensure_ascii=False),content_len=self.summary_length)
+            #content= f'''总结{self.summary_length}字以内的对话摘要，将对话中的关键信息作为记忆存储下来，使你更了解你的对话对象。 对话内容如下{json.dumps(chat_paragraph)}'''
+            self.logger.bind(tag=TAG).info(f"LLM 请求内容 生成记忆摘要: {content}")
+
+            #self.logger.bind(tag=TAG).info(f"LLM 请求内容 生成记忆摘要: {content}")
             llm_responses = self.llm.response(
                 str(uuid.uuid4()), 
                 [
                     {
                         "role": "user", 
-                        "content": self.summary_prompt.format(content=json.dumps(chat_paragraph),content_len=self.summary_length)
+                        "content": content
                     }
                 ]
             )
@@ -258,7 +264,7 @@ class MemoryManager:
         更新记忆总结，合并每个聊天段落的内容并生成摘要
         :param token_name: 用户唯一标识符
         """      
-        
+        self.logger.bind(tag=TAG).info(f"更新记忆总结: {token_name}, len(chat_paragraph): {len(chat_paragraph)}")
         if len(chat_paragraph) == 0:
             return 
         
@@ -367,10 +373,11 @@ class MemoryManager:
                 return result
         
         # 当意图识别关闭或未识别到意图时，使用记忆总结
+        self.logger.bind(tag=TAG).info(f"未识别到意图，使用记忆总结: {query}")
         similar_summary = self.search_memory_summary(token_name, query, top_k=1, threshold=0.5)
         if similar_summary:
             return f"{query}\n\n根据记忆，我们之前聊到：\n\n{similar_summary[0]}"
-            
+        self.logger.bind(tag=TAG).info(f"未找到记忆总结: {query}")
         return query
     
 
@@ -428,9 +435,16 @@ class MemoryManager:
         :return: 最相似的记忆总结条目
         """
         user_memory = self.memory_data.get(token_name, {'memory_summary': [], 'summary_embeddings': []})
-        if not user_memory['summary_embeddings']:
+        
+        if not self.use_intent_recognition and user_memory.get('memory_summary') is not None and len(user_memory['memory_summary']) > 0:
+            self.logger.bind(tag=TAG).info(f"不使用意图识别，直接返回记忆总结,{user_memory['memory_summary']}")
+            #合并所有的记忆总结
+            all_summary = "\n\n".join(user_memory['memory_summary'])
+            return [all_summary]
+        
+        if user_memory.get('summary_embeddings') is None or len(user_memory['summary_embeddings']) == 0:
             return []
-
+        
         # 生成查询的嵌入
         query_embedding = self.embedding_model.encode([query])[0]
 
@@ -455,6 +469,14 @@ class MemoryManager:
         for char in illegal_chars:
             filename = filename.replace(char, '_')
         return filename
+
+    def _restore_token_name(self, filename: str) -> str:
+        """
+        还原token名称，将下划线还原为冒号
+        :param filename: 文件系统安全的文件名
+        :return: 原始token名称
+        """
+        return filename.replace('_', ':')
 
     def save_memory(self):
         """
@@ -494,7 +516,8 @@ class MemoryManager:
 
             for file_name in os.listdir(self.memory_dir):
                 if file_name.endswith('.json'):
-                    token_name = file_name[:-5]  # 去掉 .json 后缀
+                    sanitized_token = file_name[:-5]  # 去掉 .json 后缀
+                    token_name = self._restore_token_name(sanitized_token)  # 还原原始token名称
                     file_path = os.path.join(self.memory_dir, file_name)
 
                     with open(file_path, 'r', encoding='utf-8') as file:
