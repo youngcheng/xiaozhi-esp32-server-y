@@ -2,15 +2,15 @@
 
 FROM kalicyh/node:v18-alpine AS frontend-builder
 
-WORKDIR /app/ZhiKongTaiWeb
+WORKDIR /app/web
 
 # RUN corepack enable && yarn config set registry https://registry.npmmirror.com
 
-COPY ZhiKongTaiWeb/package.json ZhiKongTaiWeb/yarn.lock ./
+COPY web/package.json web/yarn.lock ./
 
 RUN yarn install --frozen-lockfile
 
-COPY ZhiKongTaiWeb . 
+COPY web . 
 RUN yarn build
 
 # 第二阶段：构建 Python 依赖
@@ -35,7 +35,7 @@ RUN poetry install --no-root
 #     apt-get clean
 
 # 从构建阶段复制虚拟环境和前端构建产物
-COPY --from=frontend-builder /app/ZhiKongTaiWeb/dist /app/manager/static/webui
+COPY --from=frontend-builder /app/web/dist /app/manager/static/webui
 
 # 设置虚拟环境路径
 ENV PATH="/app/.venv/bin:$PATH"

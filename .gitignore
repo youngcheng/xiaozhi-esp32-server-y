@@ -140,8 +140,4 @@ cython_debug/
 model.pt
 tmp
 .DS_Store
-.config.yaml
-.secrets.yaml
-.private_config.yaml
-.env.development
-docker-compose.yml
+/data
