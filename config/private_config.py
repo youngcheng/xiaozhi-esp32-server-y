@@ -5,8 +5,7 @@ from config.logger import setup_logging
 from typing import Dict, Any, Optional
 from copy import deepcopy
 from core.utils.util import get_project_dir
-from core.utils import asr, vad, llm, tts
-from manager.api.user_manager import UserManager
+from core.utils import llm, tts
 from core.utils.lock_manager import FileLockManager
 
 TAG = __name__
@@ -19,7 +18,6 @@ class PrivateConfig:
         self.logger = setup_logging()
         self.private_config = {}
         self.auth_code_gen = auth_code_gen
-        self.user_manager = UserManager()
         self.lock_manager = FileLockManager()
 
     async def load_or_create(self):
@@ -237,94 +235,6 @@ class PrivateConfig:
             str: 认证码，如果没有返回空字符串
         """
         return self.private_config.get('auth_code', '')
-
-    async def bind_user(self, username: str) -> bool:
-        """绑定用户到设备"""
-        try:
-            await self.lock_manager.acquire_lock(self.config_path)
-            try:
-                # 检查用户是否存在
-                if not self.user_manager.get_user(username):
-                    self.logger.bind(tag=TAG).error(f"User {username} not found")
-                    return False
-
-                # 读取所有配置
-                with open(self.config_path, 'r', encoding='utf-8') as f:
-                    all_configs = yaml.safe_load(f) or {}
-
-                if self.device_id not in all_configs:
-                    self.logger.bind(tag=TAG).error(f"Device {self.device_id} not found")
-                    return False
-
-                # 删除认证码
-                auth_code = all_configs[self.device_id].get('auth_code')
-                self.logger.bind(tag=TAG).info(f"Binding user {username} to device {self.device_id}")
-                if auth_code:
-                    del all_configs[self.device_id]['auth_code']
-
-                if self.auth_code_gen:
-                    self.auth_code_gen.remove_code(auth_code)
-
-                # 更新设备所有者
-                all_configs[self.device_id]['owner'] = username
-                self.private_config = all_configs[self.device_id]
-
-                # 更新用户的设备列表
-                user_data = await self.user_manager.get_user(username)
-                if 'devices' not in user_data:
-                    user_data['devices'] = []
-                if self.device_id not in user_data['devices']:
-                    user_data['devices'].append(self.device_id)
-                    await self.user_manager.update_user(username, user_data)
-
-                # 保存配置
-                with open(self.config_path, 'w', encoding='utf-8') as f:
-                    yaml.dump(all_configs, f, allow_unicode=True)
-
-                return True
-            finally:
-                self.lock_manager.release_lock(self.config_path)
-
-        except Exception as e:
-            self.logger.bind(tag=TAG).error(f"Error binding user: {e}")
-            return False
-
-    async def unbind_user(self) -> bool:
-        """解绑设备当前用户"""
-        try:
-            await self.lock_manager.acquire_lock(self.config_path)
-            try:
-                if not self.private_config.get('owner'):
-                    return True
-
-                username = self.private_config['owner']
-                
-                # 从用户数据中移除设备
-                user_data = self.user_manager.get_user(username)
-                if user_data and 'devices' in user_data:
-                    if self.device_id in user_data['devices']:
-                        user_data['devices'].remove(self.device_id)
-                        self.user_manager.update_user(username, user_data)
-
-                # 从设备配置中移除所有者
-                with open(self.config_path, 'r', encoding='utf-8') as f:
-                    all_configs = yaml.safe_load(f) or {}
-                
-                if self.device_id in all_configs:
-                    if 'owner' in all_configs[self.device_id]:
-                        del all_configs[self.device_id]['owner']
-                        self.private_config = all_configs[self.device_id]
-                    
-                    with open(self.config_path, 'w', encoding='utf-8') as f:
-                        yaml.dump(all_configs, f, allow_unicode=True)
-
-                return True
-            finally:
-                self.lock_manager.release_lock(self.config_path)
-
-        except Exception as e:
-            self.logger.bind(tag=TAG).error(f"Error unbinding user: {e}")
-            return False
 
     def get_owner(self) -> Optional[str]:
         """获取设备当前所有者"""

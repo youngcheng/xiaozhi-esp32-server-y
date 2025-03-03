@@ -1,12 +1,28 @@
-# web/main.py
+import os
+import sys
+from contextlib import asynccontextmanager  # 新增导入
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(current_dir)
+sys.path.append(root_dir)
+
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-
 from web.api.admin import admin
 from web.api.auth import auth as auth_router
 from web.api.auth.dependencies import get_current_active_user
 
+# 新增 lifespan 处理器
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动时逻辑
+    from web.api.db import models, database
+    models.Base.metadata.create_all(bind=database.engine)
+    print("数据库表检查完成，如果不存在则已创建！")
+    yield  # 这里之后是关闭时逻辑（如果需要可以添加）
+
 app = FastAPI(
+    lifespan=lifespan,  # 添加 lifespan 参数
     title="App",
     description="",
     summary="你好小智",
@@ -42,10 +58,3 @@ async def read_users_me(current_user = Depends(get_current_active_user)):
 # 挂载 React 静态文件
 # app.mount("/", StaticFiles(directory="dist", html=True), name="dist")
 
-# 应用启动时检查并创建数据库表
-@app.on_event("startup")
-def on_startup():
-    from web.api.db import models
-    from web.api.db import database
-    models.Base.metadata.create_all(bind=database.engine)
-    print("数据库表检查完成，如果不存在则已创建！")

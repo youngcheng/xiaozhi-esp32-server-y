@@ -199,7 +199,8 @@ conda install ffmpeg -y
 # 继续使用conda环境，进入到你的项目目录，执行以下命令
 conda activate xiaozhi-esp32-server
 pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
-pip install -r requirements.txt
+pip install poetry
+poetry install --no-root
 ```
 
 ## 3.下载语音识别模型文件
@@ -216,13 +217,21 @@ pip install -r requirements.txt
 
 ## 5.运行项目
 
+如果您想启动8000端口，接收esp32的语音服务
 ```
 # 确保在本项目的根目录下执行
 conda activate xiaozhi-esp32-server
-python app.py
+poetry run python app.py
 ```
-
 这时，你就要留意日志信息，可以根据这个教程，判断是否成功了。[跳转到运行状态确认](#运行状态确认)
+
+
+如果您想启动8002端口服务，启动管理后台
+```
+# 确保在本项目的根目录下执行
+conda activate xiaozhi-esp32-server
+poetry run uvicorn web.app:app --host 0.0.0.0 --port 8888 --reload
+```
 
 # 汇总
 
