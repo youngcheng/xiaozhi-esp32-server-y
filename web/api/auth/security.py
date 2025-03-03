@@ -1,4 +1,4 @@
-# api/auth/security.py
+# web/auth/security.py
 import bcrypt
 from datetime import datetime, timedelta
 from jose import JWTError, jwt

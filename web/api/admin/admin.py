@@ -1,11 +1,11 @@
-# api/admin/admin.py
+# web/admin/admin.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from api.auth import models, security
-from api.db.database import get_db
-from api.db import models as db_models
+from web.api.auth import models, security
+from web.api.db.database import get_db
+from web.api.db import models as db_models
 
 router = APIRouter()
 

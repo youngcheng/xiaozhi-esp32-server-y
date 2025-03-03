@@ -1,14 +1,14 @@
-# api/db/database.py
+# web/db/database.py
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # 获取数据库连接 URL，可通过环境变量设置，例如：
-# SQLite:     sqlite:///./sql_app.db
+# SQLite:     sqlite:///./data/sql_app.db
 # PostgreSQL: postgresql+asyncpg://user:password@localhost/dbname
 # MySQL:      mysql+pymysql://user:password@localhost/dbname
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/sql_app.db")
 
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(

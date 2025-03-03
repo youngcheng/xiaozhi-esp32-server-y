@@ -6,7 +6,7 @@ authors = ["kalicyh <34980061+kaliCYH@users.noreply.github.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.10.16"
+python = "^3.10"
 pyyml = "0.0.2"
 torch = "2.2.2"
 silero-vad = "5.1.2"
@@ -26,6 +26,14 @@ ruamel-yaml = "0.18.10"
 setuptools = "^75.8.0"
 loguru = "^0.7.3"
 opuslib-next = "^1.1.2"
+fastapi = {extras = ["all"], version = "^0.115.8"}
+uvicorn = "^0.34.0"
+pyjwt = "^2.10.1"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+bcrypt = "^4.2.1"
+sqlalchemy = "^2.0.38"
+pymysql = "^1.1.1"
+asyncpg = "^0.30.0"
 
 
 [build-system]

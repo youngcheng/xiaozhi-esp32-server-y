@@ -143,3 +143,4 @@ tmp
 .DS_Store
 /data
 /web/node_modules
+web/vue/node_modules
