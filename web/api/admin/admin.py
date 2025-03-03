@@ -32,7 +32,7 @@ def get_current_admin_user(db: Session = Depends(get_db), token: str = Depends(s
     
     return user
 
-@router.get("/admin/check", response_model=dict)
+@router.get("/check", response_model=dict)
 def check_admin(db: Session = Depends(get_db), current_user: db_models.User = Depends(get_current_admin_user)):
     """
     检查当前用户是否为管理员

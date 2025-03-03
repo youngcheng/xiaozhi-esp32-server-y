@@ -31,29 +31,35 @@ export function SignInView() {
       formData.append('scope', '');
       formData.append('client_id', '');
       formData.append('client_secret', '');
-
-      const response = await axios.post(`${baseUrl}/auth/login`, formData.toString(), {
+  
+      const response = await axios.post(`${baseUrl}/api/v1/user/login`, formData.toString(), {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json',
         },
       });
-
+  
       if (response.status === 200) {
         const { access_token } = response.data;
-
         localStorage.setItem('access_token', access_token);
-
         toast.success('登录成功 🎉');
         router.push('/');
       } else {
         toast.error('登录失败，请检查用户名和密码');
       }
     } catch (error) {
-      toast.warning('请求错误：' + error);
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 401) {
+          toast.error('登录失败，请检查用户名和密码');
+        } else {
+          toast.warning(`请求错误：${error.response.status} - ${error.response.data?.message || '未知错误'}`);
+        }
+      } else {
+        toast.warning('请求失败，请检查网络连接');
+      }
     }
     setLoading(false);
-  };
+  };  
 
   return (
     <>

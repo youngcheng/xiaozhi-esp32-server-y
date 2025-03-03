@@ -38,8 +38,8 @@ app.add_middleware(
 )
 
 # 注册认证路由
-app.include_router(auth_router.router, prefix="/auth", tags=["auth"])
-app.include_router(admin.router, prefix="/admin", tags=["admin"])
+app.include_router(auth_router.router, prefix="/api/v1/user", tags=["user"])
+app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
 
 # 示例：受保护接口，需要 Bearer Token 验证
 @app.get("/users/me")

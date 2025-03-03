@@ -44,7 +44,7 @@ export function UserView() {
         return;
       }
 
-      const response = await axios.get(`${baseUrl}/admin/users`, {
+      const response = await axios.get(`${baseUrl}/api/v1/admin/users`, {
         headers: {
           accept: 'application/json',
           Authorization: `Bearer ${token}`,

@@ -23,7 +23,7 @@ export function SignUpView() {
   const handleSignUp = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${baseUrl}/auth/register`, {
+      const response = await fetch(`${baseUrl}/api/v1/user/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

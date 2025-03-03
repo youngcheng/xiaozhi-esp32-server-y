@@ -19,7 +19,7 @@ const getIsAdmin = async (): Promise<boolean> => {
   if (!token) return false;
 
   try {
-    const response = await axios.get(`${baseUrl}/admin/check`, {
+    const response = await axios.get(`${baseUrl}/api/v1/admin/check`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
