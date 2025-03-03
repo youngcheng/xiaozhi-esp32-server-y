@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "esp32-ai-server"
+version = "0.1.0"
+description = ""
+authors = ["kalicyh <34980061+kaliCYH@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+fastapi = {extras = ["all"], version = "^0.115.8"}
+uvicorn = "^0.34.0"
+pyjwt = "^2.10.1"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+bcrypt = "^4.2.1"
+sqlalchemy = "^2.0.38"
+pymysql = "^1.1.1"
+asyncpg = "^0.30.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
