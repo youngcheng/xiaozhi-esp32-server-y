@@ -1,4 +1,15 @@
-![图片](docs/images/banner.png)
+[![SVG Banners](https://svg-banners.vercel.app/api?type=origin&text1=你好😃，小智📟&text2=开源小智ESP-32后端服务&width=830&height=210)](https://github.com/xinnan-tech/xiaozhi-esp32-server)
+<p align="center">
+  <a href="https://github.com/xinnan-tech/xiaozhi-esp32-server/graphs/contributors">
+    <img alt="GitHub Contributors" src="https://img.shields.io/github/contributors/xinnan-tech/xiaozhi-esp32-server" />
+  </a>
+  <a href="https://github.com/xinnan-tech/xiaozhi-esp32-server/issues">
+    <img alt="Issues" src="https://img.shields.io/github/issues/xinnan-tech/xiaozhi-esp32-server?color=0088ff" />
+  </a>
+  <a href="https://github.com/xinnan-tech/xiaozhi-esp32-server/pulls">
+    <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/xinnan-tech/xiaozhi-esp32-server?color=0088ff" />
+  </a>
+</p>
 
 # 小智 ESP-32 后端服务(xiaozhi-esp32-server)
 
@@ -14,15 +25,49 @@
 本项目需要配合 ESP32 硬件设备使用。如果您已经购买了 ESP32 相关硬件，且成功对接过虾哥部署的后端服务，并希望独立搭建自己的
 `xiaozhi-esp32` 后端服务，那么本项目非常适合您。
 
-跳转到[使用方式](#使用方式-)
+想看使用效果？请猛戳视频 🎥
 
-想看使用效果？请猛戳这个视频 🎥
-
-<a href="https://www.bilibili.com/video/BV1FMFyejExX">
- <picture>
-   <img alt="小智esp32连接自己的后台模型" src="docs/images/demo.png" />
- </picture>
-</a>
+<table>
+  <tr>
+    <td>
+        <a href="https://www.bilibili.com/video/BV1FMFyejExX" target="_blank">
+         <picture>
+           <img alt="小智esp32连接自己的后台模型" src="docs/images/demo1.png" />
+         </picture>
+        </a>
+    </td>
+    <td>
+        <a href="https://www.bilibili.com/video/BV1CDKWemEU6" target="_blank">
+         <picture>
+           <img alt="自定义音色" src="docs/images/demo2.png" />
+         </picture>
+        </a>
+    </td>
+    <td>
+        <a href="https://www.bilibili.com/video/BV12yA2egEaC" target="_blank">
+         <picture>
+           <img alt="使用粤语交流" src="docs/images/demo3.png" />
+         </picture>
+        </a>
+    </td>
+    <td>
+        <a href="https://www.bilibili.com/video/av114036381327149" target="_blank">
+         <picture>
+           <img alt="控制家电开关" src="docs/images/demo5.png" />
+         </picture>
+        </a>
+    </td>
+    <td>
+        <a href="https://www.bilibili.com/video/BV1kgA2eYEQ9" target="_blank">
+         <picture>
+           <img alt="成本最低配置" src="docs/images/demo4.png" />
+         </picture>
+        </a>
+    </td>
+    <td>
+    </td>
+    </tr>
+</table>
 
 ---
 
@@ -30,16 +75,23 @@
 
 - **硬件**：一套兼容 `xiaozhi-esp32`
   的硬件设备（具体型号请参考 [此处](https://rcnv1t9vps13.feishu.cn/wiki/DdgIw4BUgivWDPkhMj1cGIYCnRf)）。
-- **服务器**：至少 4 核 CPU、8G 内存的电脑或服务器。
-- **固件编译**：请将后端服务的接口地址更新至 `xiaozhi-esp32` 项目中，再重新编译固件并烧录到设备上。
+
+- **电脑或服务器**：至少 4 核 CPU、8G 内存的电脑。
+- **固件编译**：请将本后端服务的接口地址更新至 `xiaozhi-esp32` 项目中，再重新编译`xiaozhi-esp32`固件并烧录到设备上。
+
+如果你没有esp32相关的硬件设备，但是非常想体验该项目，可以使用以下的项目让你的电脑、手机模拟成esp32设备。
+
+- [小智安卓端](https://github.com/TOM88812/xiaozhi-android-client)
+- [小智电脑端](https://github.com/Huang-junsen/py-xiaozhi)
 
 ---
 
 ## 警告 ⚠️
 
-本项目成立时间较短，还未通过网络安全测评，请勿在生产环境中使用。
+1、本项目为开源软件，本软件与对接的任何第三方API服务商（包括但不限于语音识别、大模型、语音合成等平台）均不存在商业合作关系，不为其服务质量及资金安全提供任何形式的担保。
+建议使用者优先选择持有相关业务牌照的服务商，并仔细阅读其服务协议及隐私政策。本软件不托管任何账户密钥、不参与资金流转、不承担充值资金损失风险。
 
-如果您在公网环境中部署学习本项目，请务必在配置文件 `config.yaml` 中开启防护：
+2、本项目成立时间较短，还未通过网络安全测评，请勿在生产环境中使用。 如果您在公网环境中部署学习本项目，请务必在配置文件 `config.yaml` 中开启防护：
 
 ```yaml
 server:
@@ -118,9 +170,10 @@ server:
 
 ### ASR
 
-| 类型  |  平台名称  | 使用方式 | 收费模式 | 备注 |
-|:---:|:------:|:----:|:----:|:--:|
-| ASR | FunASR | 本地使用 |  免费  |    |
+| 类型  |   平台名称    | 使用方式 | 收费模式 | 备注 |
+|:---:|:---------:|:----:|:----:|:--:|
+| ASR |  FunASR   | 本地使用 |  免费  |    |
+| ASR | DoubaoASR | 接口调用 |  收费  |    |
 
 ---
 
@@ -128,9 +181,25 @@ server:
 
 ### 一、[部署文档](./docs/Deployment.md)
 
-1.**[本地源码运行](./docs/Deployment.md#%E6%96%B9%E5%BC%8F%E4%B8%89%E6%9C%AC%E5%9C%B0%E6%BA%90%E7%A0%81%E8%BF%90%E8%A1%8C)**
-  
-适合熟悉 Conda 环境或希望从零搭建运行环境的用户。  
+本项目支持以下三种部署方式，您可根据实际需求选择。
+
+本项目的文档主要是`文字版本`的教程，如果你想要`视频版本`
+的教程，您可以学习一下[这个大佬的手把手教程](https://www.bilibili.com/video/BV1gePuejEvT)。
+
+如果你能把`文字版本的教程`和`视频版本的教程`结合起来一起看，可以让你更快上手。
+
+1. [Docker 快速部署](./docs/Deployment.md)
+
+适合快速体验的普通用户，不需过多环境配置。缺点是，拉取镜像有点慢。
+
+2. [借助 Docker 环境运行部署](./docs/Deployment.md#%E6%96%B9%E5%BC%8F%E4%BA%8C%E5%80%9F%E5%8A%A9docker%E7%8E%AF%E5%A2%83%E8%BF%90%E8%A1%8C%E9%83%A8%E7%BD%B2)
+
+适用于已安装 Docker 且希望对代码进行自定义修改的软件工程师。
+
+3. [本地源码运行](./docs/Deployment.md#%E6%96%B9%E5%BC%8F%E4%B8%89%E6%9C%AC%E5%9C%B0%E6%BA%90%E7%A0%81%E8%BF%90%E8%A1%8C)
+
+适合熟悉`Conda` 环境或希望从零搭建运行环境的用户。
+
 对于对响应速度要求较高的场景，推荐使用本地源码运行方式以降低额外开销。
 
 ### 二、[固件编译](./docs/firmware-build.md)
@@ -166,13 +235,15 @@ VAD:
 
 ### 4、为什么我说的话，小智识别出来很多韩文、日文、英文？🇰🇷
 
-建议：检查一下`models/SenseVoiceSmall`是否已经有`model.pt`文件，如果没有就要下载，查看这里[下载语音识别模型文件](docs/Deployment.md#模型文件)
+建议：检查一下`models/SenseVoiceSmall`是否已经有`model.pt`
+文件，如果没有就要下载，查看这里[下载语音识别模型文件](docs/Deployment.md#模型文件)
 
 ### 5、为什么会出现“TTS 任务出错 文件不存在”？📁
 
 建议：检查一下是否正确使用`conda` 安装了`libopus`和`ffmpeg`库。
 
 如果没有安装，就安装
+
 ```
 conda install conda-forge::libopus
 conda install conda-forge::ffmpeg
@@ -238,14 +309,19 @@ TTS 性能排行:
 
 ### 7、更多问题，可联系我们反馈 💬
 
-![图片](docs/images/wechat.jpg)
+我们的联系方式放在[百度网盘中,点击前往](https://pan.baidu.com/s/1x6USjvP1nTRsZ45XlJu65Q)，提取码是`223y`。
+
+网盘里有“硬件烧录QQ群”、“开源服务端交流群”、“产品建议联系人” 三张图片，请根据需要选择加入。
+
+- 硬件烧录QQ群：适用于硬件烧录问题
+- 开源服务端交流群：适用于服务端问题
+- 产品建议联系人：适用于产品功能、产品设计等建议
 
 ---
 
 ## 鸣谢 🙏
 
 - 本项目受 [百聆语音对话机器人](https://github.com/wwbin2017/bailing) 启发，并在其基础上实现。
-- 感谢 [腾讯云](https://cloud.tencent.com/) 提供免费 Docker 镜像空间。
 - 感谢 [十方融海](https://www.tenclass.com/) 对小智通讯协议提供的详尽文档支持。
 
 <a href="https://star-history.com/#xinnan-tech/xiaozhi-esp32-server&Date">

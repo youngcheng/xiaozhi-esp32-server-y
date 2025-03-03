@@ -22,13 +22,28 @@ server:
     # 可选:设备白名单，如果设置了白名单，那么白名单的机器无论是什么token都可以连接。
     #allowed_devices:
     #  - "24:0A:C4:1D:3B:F0"  # MAC地址列表
+log:
+  # 设置控制台输出的日志格式，时间、日志级别、标签、消息
+  log_format: "<green>{time:YY-MM-DD HH:mm:ss}</green>[<light-blue>{extra[tag]}</light-blue>] - <level>{level}</level> - <light-green>{message}</light-green>"
+  # 设置日志文件输出的格式，时间、日志级别、标签、消息
+  log_format_simple: "{time:YYYY-MM-DD HH:mm:ss} - {name} - {level} - {extra[tag]} - {message}"
+  # 设置日志等级：INFO、DEBUG
+  log_level: INFO
+  # 设置日志路径
+  log_dir: tmp
+  # 设置日志文件
+  log_file: "server.log"
+  # 设置数据文件路径
+  data_dir: data
 manager:
   # 是否启用管理后台
   # 目前这个模块还在开发中，建议：不要修改enabled选项
   enabled: false
   ip: 0.0.0.0
   port: 8002
-
+iot:
+  Speaker:
+    volume: 100
 xiaozhi:
   type: hello
   version: 1
@@ -68,9 +83,15 @@ selected_module:
 
 ASR:
   FunASR:
+    type: fun_local
     model_dir: models/SenseVoiceSmall
     output_dir: tmp/
-
+  DoubaoASR:
+    type: doubao
+    appid: 你的火山引擎语音合成服务appid
+    access_token: 你的火山引擎语音合成服务access_token
+    cluster: volcengine_input_common
+    output_dir: tmp/
 VAD:
   SileroVAD:
     threshold: 0.5
@@ -128,6 +149,12 @@ LLM:
     user_id: 你的user_id
     base_url: "https://api.coze.cn/open_api/v2/chat" # 服务地址
     personal_access_token: 你的coze个人令牌
+  LMStudioLLM:
+    # 定义LLM API类型
+    type: openai
+    model_name: deepseek-r1-distill-llama-8b@q4_k_m # 使用的模型名称，需要预先在社区下载
+    url: http://localhost:1234/v1 # LM Studio服务地址
+    api_key: lm-studio # LM Studio服务的固定API Key
   HomeAssistant:
     # 定义LLM API类型
     type: homeassistant
@@ -148,8 +175,10 @@ TTS:
     # 山引擎语音一定要购买花钱，起步价30元，就有100并发了。如果用免费的只有2个并发，会经常报tts错误
     # 购买服务后，购买免费的音色后，可能要等半小时左右，才能使用。
     # 地址：https://console.volcengine.com/speech/service/8
+    api_url: https://openspeech.bytedance.com/api/v1/tts
     voice: BV001_streaming
     output_file: tmp/
+    authorization: "Bearer;"
     appid: 你的火山引擎语音合成服务appid
     access_token: 你的火山引擎语音合成服务access_token
     cluster: volcano_tts
@@ -278,10 +307,42 @@ TTS:
     # volume: 50
     # speech_rate: 0
     # pitch_rate: 0
-
+    # 添加 302.ai TTS 配置
+    # token申请地址：https://dash.302.ai/
+  TTS302AI:
+    # 302AI语音合成服务，需要先在302平台创建账户充值，并获取密钥信息
+    # 获取api_keyn路径：https://dash.302.ai/apis/list
+    # 价格，$35/百万字符。火山原版¥450元/万字符
+    type: doubao
+    api_url: https://api.302ai.cn/doubao/tts_hd
+    authorization: "Bearer "
+    voice: "zh_female_wanwanxiaohe_moon_bigtts"
+    output_file: tmp/
+    access_token: "你的302API密钥"
 # 模块测试配置
 module_test:
   test_sentences:  # 自定义测试语句
     - "你好，请介绍一下你自己"
     - "What's the weather like today?"
     - "请用100字概括量子计算的基本原理和应用前景"
+
+# 本地音乐播放配置
+music:
+  music_commands:
+    - "来一首歌"
+    - "唱一首歌"
+    - "播放音乐"
+    - "来点音乐"
+    - "背景音乐"
+    - "放首歌"
+    - "播放歌曲"
+    - "来点背景音乐"
+    - "我想听歌"
+    - "我要听歌"
+    - "放点音乐"
+  music_dir: "./music"  # 音乐文件存放路径，将从该目录及子目录下搜索音乐文件
+  music_ext: # 音乐文件类型，p3格式效率最高
+    - ".mp3"
+    - ".wav"
+    - ".p3"
+  refresh_time: 300 # 刷新音乐列表的时间间隔，单位为秒

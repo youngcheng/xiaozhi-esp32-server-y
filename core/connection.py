@@ -4,25 +4,26 @@ import uuid
 import time
 import queue
 import asyncio
+import traceback
 from config.logger import setup_logging
 import threading
 import websockets
 from typing import Dict, Any
-from collections import deque
-from core.utils.util import is_segment
 from core.utils.dialogue import Message, Dialogue
 from core.handle.textHandle import handleTextMessage
 from core.utils.util import get_string_no_punctuation_or_emoji
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
-from core.handle.audioHandle import handleAudioMessage, sendAudioMessage
+from core.handle.sendAudioHandle import sendAudioMessage
+from core.handle.receiveAudioHandle import handleAudioMessage
 from config.private_config import PrivateConfig
 from core.auth import AuthMiddleware, AuthenticationError
-from core.utils.auth_code_gen import AuthCodeGenerator  # 添加导入
+from core.utils.auth_code_gen import AuthCodeGenerator
 
 TAG = __name__
 
+
 class ConnectionHandler:
-    def __init__(self, config: Dict[str, Any], _vad, _asr, _llm, _tts):
+    def __init__(self, config: Dict[str, Any], _vad, _asr, _llm, _tts, _music):
         self.config = config
         self.logger = setup_logging()
         self.auth = AuthMiddleware(config)
@@ -41,8 +42,8 @@ class ConnectionHandler:
         self.loop = asyncio.get_event_loop()
         self.stop_event = threading.Event()
         self.tts_queue = queue.Queue()
+        self.audio_play_queue = queue.Queue()
         self.executor = ThreadPoolExecutor(max_workers=10)
-        self.scheduled_tasks = deque()
 
         # 依赖的组件
         self.vad = _vad
@@ -72,28 +73,33 @@ class ConnectionHandler:
         self.tts_start_speak_time = None
         self.tts_duration = 0
 
+        # iot相关变量
+        self.iot_descriptors = {}
+
         self.cmd_exit = self.config["CMD_exit"]
         self.max_cmd_length = 0
         for cmd in self.cmd_exit:
             if len(cmd) > self.max_cmd_length:
                 self.max_cmd_length = len(cmd)
-        
+
         self.private_config = None
         self.auth_code_gen = AuthCodeGenerator.get_instance()
         self.is_device_verified = False  # 添加设备验证状态标志
-
+        self.music_handler = _music
 
     async def handle_connection(self, ws):
         try:
             # 获取并验证headers
             self.headers = dict(ws.request.headers)
-            self.logger.bind(tag=TAG).info(f"New connection request - Headers: {self.headers}")
+            # 获取客户端ip地址
+            client_ip = ws.remote_address[0]
+            self.logger.bind(tag=TAG).info(f"{client_ip} conn - Headers: {self.headers}")
 
             # 进行认证
             await self.auth.authenticate(self.headers)
 
             device_id = self.headers.get("device-id", None)
-            
+
             # Load private configuration if device_id is provided
             bUsePrivateConfig = self.config.get("use_private_config", False)
             self.logger.bind(tag=TAG).info(f"bUsePrivateConfig: {bUsePrivateConfig}, device_id: {device_id}")
@@ -104,10 +110,10 @@ class ConnectionHandler:
                     # 判断是否已经绑定
                     owner = self.private_config.get_owner()
                     self.is_device_verified = owner is not None
-                    
+
                     if self.is_device_verified:
-                        await self.private_config.update_last_chat_time() 
-                    
+                        await self.private_config.update_last_chat_time()
+
                     llm, tts = self.private_config.create_private_instances()
                     if all([llm, tts]):
                         self.llm = llm
@@ -131,8 +137,13 @@ class ConnectionHandler:
 
             await self.loop.run_in_executor(None, self._initialize_components)
 
-            tts_priority = threading.Thread(target=self._priority_thread, daemon=True)
+            # tts 消化线程
+            tts_priority = threading.Thread(target=self._tts_priority_thread, daemon=True)
             tts_priority.start()
+
+            # 音频播放 消化线程
+            audio_play_priority = threading.Thread(target=self._audio_play_priority_thread, daemon=True)
+            audio_play_priority.start()
 
             try:
                 async for message in self.websocket:
@@ -146,7 +157,8 @@ class ConnectionHandler:
             await ws.close()
             return
         except Exception as e:
-            self.logger.bind(tag=TAG).error(f"Connection error: {str(e)}")
+            stack_trace = traceback.format_exc()
+            self.logger.bind(tag=TAG).error(f"Connection error: {str(e)}-{stack_trace}")
             await ws.close()
             return
 
@@ -166,7 +178,7 @@ class ConnectionHandler:
             date_time = time.strftime("%Y-%m-%d %H:%M", time.localtime())
             self.prompt = self.prompt.replace("{date_time}", date_time)
         self.dialogue.put(Message(role="system", content=self.prompt))
-          
+
     async def _check_and_broadcast_auth_code(self):
         """检查设备绑定状态并广播认证码"""
         if not self.private_config.get_owner():
@@ -186,12 +198,10 @@ class ConnectionHandler:
             # 如果不使用私有配置，就不需要验证
             return False
         return not self.is_device_verified
-    
+
     def chat(self, query):
-        # 如果设备未验证，就发送验证码
         if self.isNeedAuth():
             self.llm_finish_task = True
-            # 创建一个新的事件循环来运行异步函数
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
@@ -199,52 +209,64 @@ class ConnectionHandler:
             finally:
                 loop.close()
             return True
-        
+
         self.dialogue.put(Message(role="user", content=query))
         response_message = []
-        start = 0
-        # 提交 LLM 任务
+        processed_chars = 0  # 跟踪已处理的字符位置
         try:
-            start_time = time.time()  # 记录开始时间
+            start_time = time.time()
             llm_responses = self.llm.response(self.session_id, self.dialogue.get_llm_dialogue())
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"LLM 处理出错 {query}: {e}")
             return None
-        # 提交 TTS 任务到线程池
+
         self.llm_finish_task = False
         for content in llm_responses:
             response_message.append(content)
-            # 如果中途被打断，就停止生成
             if self.client_abort:
-                start = len(response_message)
                 break
 
-            end_time = time.time()  # 记录结束时间
-            self.logger.bind(tag=TAG).debug(f"大模型返回时间时间: {end_time - start_time} 秒, 生成token={content}")
-            if is_segment(response_message):
-                segment_text = "".join(response_message[start:])
-                segment_text = get_string_no_punctuation_or_emoji(segment_text)
-                if len(segment_text) > 0:
+            end_time = time.time()
+            self.logger.bind(tag=TAG).debug(f"大模型返回时间: {end_time - start_time} 秒, 生成token={content}")
+
+            # 合并当前全部文本并处理未分割部分
+            full_text = "".join(response_message)
+            current_text = full_text[processed_chars:]  # 从未处理的位置开始
+
+            # 查找最后一个有效标点
+            punctuations = ("。", "？", "！", "?", "!", ";", "；", ":", "：", "，")
+            last_punct_pos = -1
+            for punct in punctuations:
+                pos = current_text.rfind(punct)
+                if pos > last_punct_pos:
+                    last_punct_pos = pos
+
+            # 找到分割点则处理
+            if last_punct_pos != -1:
+                segment_text_raw = current_text[:last_punct_pos + 1]
+                segment_text = get_string_no_punctuation_or_emoji(segment_text_raw)
+                if segment_text:
                     self.recode_first_last_text(segment_text)
                     future = self.executor.submit(self.speak_and_play, segment_text)
                     self.tts_queue.put(future)
-                    start = len(response_message)
+                    processed_chars += len(segment_text_raw)  # 更新已处理字符位置
 
-        # 处理剩余的响应
-        if start < len(response_message):
-            segment_text = "".join(response_message[start:])
-            if len(segment_text) > 0:
+        # 处理最后剩余的文本
+        full_text = "".join(response_message)
+        remaining_text = full_text[processed_chars:]
+        if remaining_text:
+            segment_text = get_string_no_punctuation_or_emoji(remaining_text)
+            if segment_text:
                 self.recode_first_last_text(segment_text)
                 future = self.executor.submit(self.speak_and_play, segment_text)
                 self.tts_queue.put(future)
 
         self.llm_finish_task = True
-        # 更新对话
         self.dialogue.put(Message(role="assistant", content="".join(response_message)))
         self.logger.bind(tag=TAG).debug(json.dumps(self.dialogue.get_llm_dialogue(), indent=4, ensure_ascii=False))
         return True
 
-    def _priority_thread(self):
+    def _tts_priority_thread(self):
         while not self.stop_event.is_set():
             text = None
             try:
@@ -266,7 +288,6 @@ class ConnectionHandler:
                     else:
                         self.logger.bind(tag=TAG).error(f"TTS文件不存在: {tts_file}")
                         opus_datas = []
-                        duration = 0
                 except TimeoutError:
                     self.logger.bind(tag=TAG).error("TTS 任务超时")
                     continue
@@ -275,9 +296,7 @@ class ConnectionHandler:
                     continue
                 if not self.client_abort:
                     # 如果没有中途打断就发送语音
-                    asyncio.run_coroutine_threadsafe(
-                        sendAudioMessage(self, opus_datas, duration, text), self.loop
-                    )
+                    self.audio_play_queue.put((opus_datas, text))
                 if self.tts.delete_audio_file and os.path.exists(tts_file):
                     os.remove(tts_file)
             except Exception as e:
@@ -288,6 +307,16 @@ class ConnectionHandler:
                     self.loop
                 )
                 self.logger.bind(tag=TAG).error(f"tts_priority priority_thread: {text}{e}")
+
+    def _audio_play_priority_thread(self):
+        while not self.stop_event.is_set():
+            text = None
+            try:
+                opus_datas, text = self.audio_play_queue.get()
+                future = asyncio.run_coroutine_threadsafe(sendAudioMessage(self, opus_datas, text), self.loop)
+                future.result()
+            except Exception as e:
+                self.logger.bind(tag=TAG).error(f"audio_play_priority priority_thread: {text}{e}")
 
     def speak_and_play(self, text):
         if text is None or len(text) <= 0:
@@ -316,6 +345,8 @@ class ConnectionHandler:
 
     async def close(self):
         """资源清理方法"""
+
+        # 清理其他资源
         self.stop_event.set()
         self.executor.shutdown(wait=False)
         if self.websocket:
@@ -328,9 +359,3 @@ class ConnectionHandler:
         self.client_have_voice_last_time = 0
         self.client_voice_stop = False
         self.logger.bind(tag=TAG).debug("VAD states reset.")
-
-    def stop_all_tasks(self):
-        while self.scheduled_tasks:
-            task = self.scheduled_tasks.popleft()
-            task.cancel()
-        self.scheduled_tasks.clear()
