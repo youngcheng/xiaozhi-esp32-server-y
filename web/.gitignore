@@ -1,7 +1,0 @@
-.DS_Store
-/node_modules
-yarn.lock
-poetry.lock
-/dist
-*.pyc
-sql_app.db
