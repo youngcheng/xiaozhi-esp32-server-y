@@ -7,6 +7,7 @@ from core.handle.receiveAudioHandle import startToChat, handleAudioMessage
 from core.handle.sendAudioHandle import send_stt_message, send_tts_message
 from core.handle.iotHandle import handleIotDescriptors, handleIotStatus
 from core.handle.reportHandle import enqueue_asr_report
+from core.handle.reminderHandle import handleReminderMessage
 import asyncio
 
 TAG = __name__
@@ -82,6 +83,9 @@ async def handleTextMessage(conn, message):
                 asyncio.create_task(
                     handle_mcp_message(conn, conn.mcp_client, msg_json["payload"])
                 )
+        elif msg_json["type"] == "reminder":
+            conn.logger.bind(tag=TAG).info(f"收到reminder消息：{message}")
+            await handleReminderMessage(conn, msg_json)
         elif msg_json["type"] == "server":
             # 记录日志时过滤敏感信息
             conn.logger.bind(tag=TAG).info(

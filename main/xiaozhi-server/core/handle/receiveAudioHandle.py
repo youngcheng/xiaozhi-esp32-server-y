@@ -37,7 +37,7 @@ async def resume_vad_detection(conn):
     conn.just_woken_up = False
 
 
-async def startToChat(conn, text):
+async def startToChat(conn, text, role="user"):
     if conn.need_bind:
         await check_bind_device(conn)
         return
@@ -61,7 +61,7 @@ async def startToChat(conn, text):
 
     # 意图未被处理，继续常规聊天流程
     await send_stt_message(conn, text)
-    conn.executor.submit(conn.chat, text)
+    conn.executor.submit(conn.chat, text, role)
 
 
 async def no_voice_close_connect(conn, have_voice):
@@ -89,7 +89,7 @@ async def no_voice_close_connect(conn, have_voice):
             prompt = end_prompt.get("prompt")
             if not prompt:
                 prompt = "请你以```时间过得真快```未来头，用富有感情、依依不舍的话来结束这场对话吧。！"
-            await startToChat(conn, prompt)
+            await startToChat(conn, prompt, "system")
 
 
 async def max_out_size(conn):

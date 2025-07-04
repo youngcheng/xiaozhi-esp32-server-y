@@ -600,12 +600,12 @@ class ConnectionHandler:
         # 更新系统prompt至上下文
         self.dialogue.update_system_message(self.prompt)
 
-    def chat(self, query, tool_call=False):
-        self.logger.bind(tag=TAG).info(f"大模型收到用户消息: {query}")
+    def chat(self, query, role="user"):
+        self.logger.bind(tag=TAG).info(f"大模型收到{role}消息: {query}")
         self.llm_finish_task = False
 
-        if not tool_call:
-            self.dialogue.put(Message(role="user", content=query))
+        if role != "tool":
+            self.dialogue.put(Message(role=role, content=query))
 
         # Define intent functions
         functions = None
@@ -630,18 +630,23 @@ class ConnectionHandler:
 
             self.sentence_id = str(uuid.uuid4().hex)
 
+            llm_dialogue = self.dialogue.get_llm_dialogue_with_memory(memory_str)
+            
+            # test log
+            # for message in llm_dialogue:
+            #     self.logger.bind(tag=TAG).info(f"大模型对话: {message}")
 
             if self.intent_type == "function_call" and functions is not None:
                 # 使用支持functions的streaming接口
                 llm_responses = self.llm.response_with_functions(
                     self.session_id,
-                    self.dialogue.get_llm_dialogue_with_memory(memory_str),
+                    llm_dialogue,
                     functions=functions,
                 )
             else:
                 llm_responses = self.llm.response(
                     self.session_id,
-                    self.dialogue.get_llm_dialogue_with_memory(memory_str),
+                    llm_dialogue,
                 )
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"LLM 处理出错 {query}: {e}")
@@ -888,7 +893,7 @@ class ConnectionHandler:
                         content=text,
                     )
                 )
-                self.chat(text, tool_call=True)
+                self.chat(text, role="tool")
         elif result.action == Action.NOTFOUND or result.action == Action.ERROR:
             text = result.result
             self.tts.tts_one_sentence(self, ContentType.TEXT, content_detail=text)
